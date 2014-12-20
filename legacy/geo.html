@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<!--
+ Blaufish's HTML5 Geolocation API GPS Averaging
+ http://blaufish.wordpress.com/
+
+ Some rights reserved;
+ http://creativecommons.org/licenses/by-nc-sa/3.0/
+
+-->
+<html>
+<head>
+<title>GPS Averaging HTML5 Geolocation API by Blaufish</title>
+<link rel="apple-touch-icon" href="profile_darker45x45.png" />
+<link rel="icon" href="profile_darker45x45.png" />
+</head>
+<body>
+<canvas id="canvas" width="256" height="256">
+This text is displayed if your browser does not support HTML5 Canvas.
+</canvas><br/>
+<font face="courier" size="-3">
+<output id="output">no output</output>
+</font>
+
+<pre>
+ Blaufish's HTML5 Geolocation API GPS Averaging
+ http://blaufish.wordpress.com/
+
+ Some rights reserved;
+ http://creativecommons.org/licenses/by-nc-sa/3.0/
+</pre>
+
+<!-- 
+   latlon2tile.js: This is a port of Ian Dees php class to a
+   javascript prototype so you can get tile information from
+   a lat/lon coordinate on the client side. By Will James of
+   Tekimaki.com
+ -->
+<script src="latlon2tile.js"></script>
+
+<script>
+   if (navigator.geolocation == undefined) {
+     output.innerText = "Error: geolocation API not accessible!";
+     alert("Geolocation API required!");
+   }
+
+   var cnt, avglat, avglon, avgacc, minlat, maxlat, minlon, maxlon;
+ 
+   var output = document.getElementById('output'); 
+   
+   var cnvs = document.getElementById('canvas'); 
+   var context = cnvs.getContext('2d');
+   
+   localStorage.clear(); 
+
+   function calculateMinMaxAvg() {
+      //Calculate min, max, avg
+      maxlat = Number(localStorage.getItem('lat1'));
+      minlat = maxlat;
+      maxlon = Number(localStorage.getItem('lon1'));
+      minlon = maxlon;
+      var i;
+      avglat = 0;
+      avglon = 0;
+      avgacc = 0;
+      for(i = 1; i <= cnt; i++) {
+         var lat = Number(localStorage.getItem('lat'+i));
+         var lon = Number(localStorage.getItem('lon'+i));
+         var acc = Number(localStorage.getItem('acc'+i));
+         maxlat = Math.max(maxlat, lat);
+         minlat = Math.min(minlat, lat);
+         maxlon = Math.max(maxlon, lon);
+         minlon = Math.min(minlon, lon);
+
+         avglat += lat/acc;
+         avglon += lon/acc;
+         avgacc += 1/acc;
+
+      }
+
+      avglat /= avgacc;
+      avglon /= avgacc;
+     
+   }
+
+   var avgcolor = 0;
+   function paintAvg() {
+      if (avglat == undefined) return;
+      if (avglon == undefined) return;
+
+      // Paint average
+      switch (avgcolor) {
+        case 0: context.fillStyle = 'rgb(255,255,0)'; break;
+        case 1: context.fillStyle = 'rgb(0,0,0)'; break;
+        case 2: context.fillStyle = 'rgb(0,255,0)'; break;
+        case 3: context.fillStyle = 'rgb(0,255,127)'; break;
+      }
+      avgcolor = (avgcolor+1)%2;
+
+      var tile = TileUtl.getTileCoordinate(avglat,avglon,zoom);
+      var bitmap = TileUtl.getBitmapCoordinate(avglat,avglon,zoom);
+      var x = bitmap.x - tile.x*256;
+      var y = bitmap.y - tile.y*256;
+
+      context.fillRect(x,y,7,7);
+   }
+
+
+   function log10(n) { return Math.log(n)/Math.log(10); }
+ 
+   function paintCanvas() {
+     
+      // Clear canvas
+
+      context.clearRect(0,0,cnvs.width,cnvs.height);
+
+      // Paint positions
+
+      for(i = 1; i <= cnt; i++) {
+         var lat = Number(localStorage.getItem('lat'+i));
+         var lon = Number(localStorage.getItem('lon'+i));
+         var acc = Number(localStorage.getItem('acc'+i));
+
+         var tile = TileUtl.getTileCoordinate(lat,lon,zoom);
+         var bitmap = TileUtl.getBitmapCoordinate(lat,lon,zoom);
+         var x = bitmap.x - tile.x*256;
+         var y = bitmap.y - tile.y*256;
+
+         var color = 'rgb(255,0,0)';
+         if (acc>50) color = 'rgb(255,100,150)';
+         if (acc>100) color = 'rgb(255,150,150)';
+         if (acc>200) color = 'rgb(255,200,200)';
+         var size = 1 + Math.ceil(5*log10(acc));
+ 
+         context.fillStyle = color;
+         context.fillRect(x,y,size,size);
+
+      }
+
+      //paintAvg();
+      output.innerHTML += '<br/>done!';
+
+    }
+
+    
+
+    function fmt(latlong,ne,sw) {
+       var dir = (latlong>0) ? ne : sw;
+       latlong = Math.abs(latlong);
+       var deg = Math.floor(latlong);
+       var res = latlong - deg;
+       var min = (res * 60);
+       min = Math.round(min * 10000) / 10000;
+       return dir + " " + deg + " " + min;
+    }
+
+    function ffmt(lat,lon) {
+       var s = fmt(lat,'N','S') + ' ' + fmt(lon,'E','W');
+       s += ' <a href="http://maps.google.se/maps?q=';
+       s += lat+'+'+lon+' (x)">map</a>'; 
+       return s;
+    }
+
+    var zoom = 17;
+    var TileUtl = new Tile();
+
+    function setBg(lat,lon) {
+      var tileCoords = TileUtl.getTileCoords( lat, lon, zoom );
+      var url = 'http://mt.google.com/vt/x=';
+      url += tileCoords.x + '&y=' + tileCoords.y + '&z=' + zoom;
+      cnvs.style.backgroundImage = 'url('+url+')';
+    }
+
+    function scrollMap(position) {
+      output.innerHTML = '';
+
+      cnt = 0;
+      if (localStorage.getItem(cnt) !== undefined) {
+	cnt = localStorage.getItem('cnt');
+      }
+      cnt++;
+
+
+      var lat = position.coords.latitude;
+      var lon = position.coords.longitude;
+      var acc = position.coords.accuracy;
+
+      localStorage.setItem('cnt', cnt);
+      localStorage.setItem('lat'+cnt, lat);
+      localStorage.setItem('lon'+cnt, lon);
+      localStorage.setItem('acc'+cnt, acc);
+
+      calculateMinMaxAvg();
+
+      output.innerHTML += 'cur: ' + ffmt(lat,lon);
+      output.innerHTML += ' ' + Math.round(position.coords.accuracy);
+      output.innerHTML +=  'm cnt:' + cnt;
+
+      output.innerHTML += '<br/> avg: ' + ffmt(avglat,avglon);
+      output.innerHTML += '<br/> min: ' + ffmt(minlat,minlon);
+      output.innerHTML += '<br/> max: ' + ffmt(maxlat,maxlon);
+      output.innerHTML += '<br/>';
+
+      setBg(avglat,avglon);
+      paintCanvas();
+
+  }
+
+  function errorCallback(e) {
+    output.innerText = "Error: " + e.code + " " + e.message;
+  }
+
+
+  navigator.geolocation.watchPosition(scrollMap, errorCallback);
+
+  function gcp() {
+    navigator.geolocation.getCurrentPosition(
+       new function(e){}, 
+       errorCallback, 
+       {maximumAge:500, timeout:500} 
+    );
+  }
+
+  setInterval( "gcp();", 5000 );
+
+  setInterval( "paintAvg();", 250 );
+
+</script>
+</html>
