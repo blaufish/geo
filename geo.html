@@ -8,19 +8,36 @@
 	</style>
 	<script src="jquery-2.1.3.min.js">JS</script>
 	<script src="jquery.mobile-1.4.5.min.js">JS</script>
+	<script src="gps.js">JS</script>
+	<script src="average.page.js">JS</script>
 	<script src="map.page.js">JS</script>
 	<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
 </head>
 <body>
+
+
+	<div data-role="page" id="average-page" data-url="average-page">
+		<div data-role="header" data-theme="a">
+			<div data-role="controlgroup">
+				<a href="#map-page" data-role="button">Map</a>
+			</div>
+		</div>
+		<div role="main" class="ui-content" id="gps">
+			<h1 id="gps-current-stats"></h1>
+		</div>
+	</div>
+
+
 	<div data-role="page" id="map-page" data-url="map-page">
 		<div data-role="header" data-theme="a">
-    		<div data-role="controlgroup">
-				<a href="#" data-role="button" id="demo">Demo</a>
-				<a href="#" data-role="button" id="average">Average</a>
+			<div data-role="controlgroup">
+				<a href="#average-page" data-role="button">Average</a>
 			</div>
 		</div>
 		<div id="console"></div>
 		<div role="main" class="ui-content" id="map-canvas"></div>
 	</div>
+
+
 </body>
 </html>
