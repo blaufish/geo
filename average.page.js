@@ -1,11 +1,24 @@
 $( document ).on( "pageinit", "#average-page", function() {
 	setInterval(function() { updateAveragePage(); }, 1000 );
+	$("#gps-average-button").tap(function() {
+		if (doAverage) {
+			doAverage = false;
+		}
+		else {
+			resetAverage();
+			doAverage = true;
+		}
+	})
 });
 
 function updateAveragePage() {
 	if(currentPosition === undefined) return;
 	$("#gps-current-stats-accuracy").text(currentPosition.accuracy+ " m" );
 	$("#gps-current-stats-position").text(fmt(currentPosition.longitude,'N','S') + " " + fmt(currentPosition.latitude,'E','W') );
+	if(averagePosition === undefined) return;
+	if(!doAverage) return ;
+	$("#gps-average-stats-count").text(averageOffset.count);
+	$("#gps-average-stats-position").text(fmt(averagePosition.longitude,'N','S') + " " + fmt(averagePosition.latitude,'E','W') );
 }
 
 function fmt(number, ne, sw) {

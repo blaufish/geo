@@ -16,6 +16,7 @@ function update(pos) {
         longitude: pos.coords.longitude,
         accuracy: pos.coords.accuracy
     };
+    average();
 }
 var doAverage = false;
 var averagePosition;
@@ -28,8 +29,8 @@ var averageOffset = {
 var averageOffsetCount = 0;
 
 function resetAverage() {
-    averagePosition = null;
-    averageBasePosition = null;
+    averagePosition = undefined;
+    averageBasePosition = undefined;
     averageOffset = {
         latitude: 0,
         longitude: 0,
@@ -40,7 +41,7 @@ function resetAverage() {
 function average() {
     if (!doAverage) return;
     var pos = currentPosition;
-    if (!averageBasePosition) {
+    if (averageBasePosition === undefined) {
         averageBasePosition = pos;
         return;
     }
